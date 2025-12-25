@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:18
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - pgdata:/var/lib/postgresql # Persistent storage for database data
+      - ./init_db:/docker-entrypoint-initdb.d:ro
+      - ./configs/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test: CMD-SHELL pg_isready -U "$POSTGRES_USER"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    secrets:
+      - sandbox_user_password
+      - postgres_password
+
+secrets:
+  postgres_password:
+    file: ./.secrets/postgres_password.txt
+  sandbox_user_password:
+    file: ./.secrets/sandbox_user_password.txt
+
+volumes:
+  pgdata:
